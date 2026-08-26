@@ -27,8 +27,15 @@ export interface User {
   email: string;
   name: string;
   avatar_url?: string;
+  // Settings fields stored flat in Firestore (not nested under 'settings')
+  approval_mode?: ApprovalMode;
+  spreadsheet_id?: string;
+  digest_frequency?: DigestFrequency;
+  notification_email?: string;
+  slack_webhook_url?: string;
+  created_at?: string;
+  // Virtual computed property for backward compat with components that use user.settings
   settings: UserSettings;
-  created_at: string;
 }
 
 export interface UserSettings {

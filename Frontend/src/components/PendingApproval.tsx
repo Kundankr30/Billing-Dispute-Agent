@@ -133,7 +133,7 @@ export function PendingApproval({
                   <div
                     className="mt-1 rounded-md border bg-white p-3 text-xs leading-relaxed"
                     dangerouslySetInnerHTML={{
-                      __html: body.replace(/\n/g, "<br />"),
+                      __html: (body ?? "").replace(/\n/g, "<br />"),
                     }}
                   />
                 </div>

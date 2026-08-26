@@ -329,9 +329,7 @@ export default function DisputeDetailPage() {
       )}
 
       {/* Email Thread */}
-      {dispute.emails && dispute.emails.length > 0 && (
-        <EmailThread emails={dispute.emails} />
-      )}
+      <EmailThread emails={dispute.emails ?? []} />
 
       {/* Resolve Dialog */}
       <Dialog open={resolveOpen} onOpenChange={setResolveOpen}>

@@ -28,7 +28,6 @@ import {
   Plus,
   MoreHorizontal,
   Eye,
-  Pencil,
   Mail,
   CheckCircle,
   ChevronLeft,
@@ -64,8 +63,8 @@ export function DisputeTable() {
         params.filter = filter;
       }
       const res = await api.disputes.list(params);
-      setDisputes(res.disputes);
-      setTotal(res.total);
+      setDisputes(res.disputes ?? []);
+      setTotal(res.total ?? 0);
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to load disputes."
@@ -222,16 +221,18 @@ export function DisputeTable() {
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
-                        <DropdownMenuTrigger>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Actions</span>
-                          </Button>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          }
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Actions</span>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
@@ -241,14 +242,6 @@ export function DisputeTable() {
                             }}
                           >
                             <Eye className="mr-2 h-4 w-4" /> View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/disputes/${dispute.id}`);
-                            }}
-                          >
-                            <Pencil className="mr-2 h-4 w-4" /> Edit
                           </DropdownMenuItem>
                           {dispute.status === "new" && (
                             <DropdownMenuItem

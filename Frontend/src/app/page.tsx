@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   DollarSign,
   Shield,
   ArrowRight,
+  AlertCircle,
 } from "lucide-react";
 
 const features = [
@@ -41,9 +42,18 @@ const features = [
   },
 ];
 
+const ERROR_MESSAGES: Record<string, string> = {
+  auth_failed: "Sign-in failed. Please try again.",
+  identity_failed: "Could not verify your Google identity. Please try again.",
+  missing_code: "OAuth flow was interrupted. Please try again.",
+};
+
 export default function LandingPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const errorKey = searchParams.get("error");
+  const errorMessage = errorKey ? (ERROR_MESSAGES[errorKey] ?? "Sign-in failed. Please try again.") : null;
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -53,7 +63,7 @@ export default function LandingPage() {
 
   if (isLoading) {
     return (
-      <div classNamEmailPreviewe="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading…</div>
       </div>
     );
@@ -70,14 +80,24 @@ export default function LandingPage() {
               DisputeFlow
             </span>
           </div>
-          <a
-            href={api.auth.loginUrl()}
+          <button
+            onClick={() => api.auth.login()}
             className="inline-flex h-8 items-center justify-center rounded-lg border border-transparent bg-primary px-2.5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/80"
           >
             Sign in
-          </a>
+          </button>
         </div>
       </header>
+
+      {/* Auth error banner */}
+      {errorMessage && (
+        <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3">
+          <div className="mx-auto flex max-w-6xl items-center gap-2 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        </div>
+      )}
 
       {/* Hero */}
       <main className="flex-1">
@@ -92,12 +112,12 @@ export default function LandingPage() {
             recover overcharges — all from one dashboard.
           </p>
           <div className="mt-10">
-            <a
-              href={api.auth.loginUrl()}
+            <button
+              onClick={() => api.auth.login()}
               className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-transparent bg-primary px-2.5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary/80"
             >
               Sign in with Google <ArrowRight className="h-4 w-4" />
-            </a>
+            </button>
           </div>
         </section>
 

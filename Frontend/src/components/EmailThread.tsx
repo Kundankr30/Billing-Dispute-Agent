@@ -12,7 +12,8 @@ interface EmailThreadProps {
 }
 
 export function EmailThread({ emails }: EmailThreadProps) {
-  if (emails.length === 0) {
+  const safeEmails = emails ?? [];
+  if (safeEmails.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -45,7 +46,7 @@ export function EmailThread({ emails }: EmailThreadProps) {
       <CardContent>
         <ScrollArea className="max-h-[600px]">
           <div className="space-y-4">
-            {emails.map((email, idx) => (
+            {safeEmails.map((email, idx) => (
               <div key={email.id}>
                 {idx > 0 && <Separator className="my-4" />}
                 <div className="space-y-2">
@@ -69,7 +70,7 @@ export function EmailThread({ emails }: EmailThreadProps) {
                   <div
                     className="rounded-lg border bg-muted/30 p-3 text-sm"
                     dangerouslySetInnerHTML={{
-                      __html: email.body.replace(/\n/g, "<br />"),
+                      __html: (email.body ?? "").replace(/\n/g, "<br />"),
                     }}
                   />
                 </div>

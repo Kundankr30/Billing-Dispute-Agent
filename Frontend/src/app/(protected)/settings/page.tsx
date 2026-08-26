@@ -229,7 +229,7 @@ export default function SettingsPage() {
               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save
             </Button>
-            {user?.settings.spreadsheet_id && (
+            {user?.settings?.spreadsheet_id && (
               <Button variant="destructive" onClick={handleDisconnectSheet} disabled={isSaving}>
                 Disconnect Sheet
               </Button>

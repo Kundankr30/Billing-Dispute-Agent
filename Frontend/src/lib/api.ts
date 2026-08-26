@@ -1,3 +1,4 @@
+import axios from "axios";
 import type {
   User,
   Dispute,
@@ -17,25 +18,44 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Axios instance with credentials (cookies) included on every request
+export const axiosClient = axios.create({
+  baseURL: API_BASE,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Generic helper that wraps axios for typed responses
 export async function apiFetch<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
-  });
+  const method = (options?.method ?? "GET").toLowerCase() as
+    | "get"
+    | "post"
+    | "put"
+    | "patch"
+    | "delete";
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: "Unknown error" }));
-    throw new Error(error.detail || `HTTP ${res.status}`);
+  const body = options?.body ? JSON.parse(options.body as string) : undefined;
+
+  try {
+    const res = await axiosClient.request<T>({
+      url: path,
+      method,
+      data: body,
+      headers: options?.headers as Record<string, string>,
+    });
+    return res.data;
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      const detail = err.response?.data?.detail;
+      throw new Error(detail || `HTTP ${err.response?.status ?? "unknown"}`);
+    }
+    throw err;
   }
-
-  return res.json();
 }
 
 // ============================================================
@@ -47,6 +67,15 @@ export const api = {
     me: () => apiFetch<User>("/auth/me"),
     logout: () => apiFetch<void>("/auth/logout", { method: "POST" }),
     loginUrl: () => `${API_BASE}/auth/login`,
+    /**
+     * Redirect the browser to the backend OAuth login endpoint.
+     * The backend issues a 302 redirect to Google — the browser must
+     * follow this natively, so we use window.location.href directly.
+     * Axios cannot intercept browser-level OAuth redirects.
+     */
+    login: () => {
+      window.location.href = `${API_BASE}/auth/login`;
+    },
   },
 
   dashboard: {

@@ -22,6 +22,23 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+/**
+ * The backend /auth/me returns a flat Firestore doc.
+ * This helper adds the computed `settings` field that the UI expects.
+ */
+function normalizeUser(raw: any): User {
+  return {
+    ...raw,
+    settings: {
+      approval_mode: raw.approval_mode ?? "manual",
+      spreadsheet_id: raw.spreadsheet_id ?? undefined,
+      digest_frequency: raw.digest_frequency ?? "weekly",
+      notification_email: raw.notification_email ?? undefined,
+      slack_webhook_url: raw.slack_webhook_url ?? undefined,
+    },
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,8 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = useCallback(async () => {
     try {
-      const u = await api.auth.me();
-      setUser(u);
+      const raw = await api.auth.me();
+      setUser(normalizeUser(raw));
     } catch {
       setUser(null);
     } finally {
