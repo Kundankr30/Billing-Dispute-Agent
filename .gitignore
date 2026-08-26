@@ -43,4 +43,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
->>>>>>> 72827510eb1e543e99c5a5998283ffdf4690f418
