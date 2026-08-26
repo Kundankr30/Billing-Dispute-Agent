@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const DisputeCreate = z.object({
   vendor_name: z.string(),
-  vendor_contact_email: z.string().email(),
+  contact_email: z.string().email(),
   issue_description: z.string(),
   amount: z.number(),
   currency: z.string().default("USD"),

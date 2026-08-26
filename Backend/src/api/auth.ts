@@ -31,62 +31,76 @@ router.get("/login", (_req, res) => {
 });
 
 router.get("/callback", async (req, res) => {
-  const client = oauthClient();
-  const code = req.query.code as string;
-  const { tokens } = await client.getToken(code);
-  client.setCredentials(tokens);
+  try {
+    const client = oauthClient();
+    const code = req.query.code as string;
 
-  // Fetch basic profile info
-  const ticket = await client.verifyIdToken({
-    idToken: tokens.id_token!,
-    audience: settings.GOOGLE_CLIENT_ID,
-  });
-  const payload = ticket.getPayload();
-  if (!payload?.sub) return res.status(400).send("Failed to verify Google identity");
+    if (!code) {
+      console.error("OAuth callback: missing code param");
+      return res.redirect(`${settings.FRONTEND_URL}/?error=missing_code`);
+    }
 
-  const userId = payload.sub; // Google's stable user id — used as the Firestore doc id
-  const email = payload.email ?? "";
-  const name = payload.name ?? "";
+    const { tokens } = await client.getToken(code);
+    client.setCredentials(tokens);
 
-  if (!tokens.refresh_token) {
-    // Google only returns a refresh_token on first consent. If missing here,
-    // it means the user already granted consent before without prompt=consent,
-    // or this is a repeat login — handle by keeping the existing stored token.
-    console.warn("No refresh_token returned — user may need to re-consent");
-  }
+    // Fetch basic profile info
+    const ticket = await client.verifyIdToken({
+      idToken: tokens.id_token!,
+      audience: settings.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload?.sub) {
+      console.error("OAuth callback: failed to verify Google identity");
+      return res.redirect(`${settings.FRONTEND_URL}/?error=identity_failed`);
+    }
 
-  const userRef = db.collection("users").doc(userId);
-  const existing = await userRef.get();
-  const updateData: Record<string, any> = {
-    email,
-    name,
-  };
+    const userId = payload.sub; // Google's stable user id — used as the Firestore doc id
+    const email = payload.email ?? "";
+    const name = payload.name ?? "";
 
-  if (tokens.refresh_token) {
-    updateData.google_refresh_token_encrypted = encryptToken(tokens.refresh_token);
-  }
+    if (!tokens.refresh_token) {
+      // Google only returns a refresh_token on first consent. If missing here,
+      // it means the user already granted consent before without prompt=consent,
+      // or this is a repeat login — handle by keeping the existing stored token.
+      console.warn("No refresh_token returned — user may need to re-consent");
+    }
 
-  if (!existing.exists) {
-    // First-time user — set defaults per Member 2's schema
-    await userRef.set({
+    const userRef = db.collection("users").doc(userId);
+    const existing = await userRef.get();
+    const updateData: Record<string, any> = {
       email,
       name,
-      google_refresh_token_encrypted: tokens.refresh_token
-        ? encryptToken(tokens.refresh_token)
-        : "",
-      spreadsheet_id: null,
-      last_sheet_sync_row: 0,
-      notification_email: email,
-      slack_webhook_url: null,
-      approval_mode: "manual",
-      created_at: new Date(),
-    });
-  } else {
-    await userRef.set(updateData, { merge: true });
-  }
+    };
 
-  req.session.userId = userId;
-  res.redirect(`${settings.FRONTEND_URL}/dashboard`);
+    if (tokens.refresh_token) {
+      updateData.google_refresh_token_encrypted = encryptToken(tokens.refresh_token);
+    }
+
+    if (!existing.exists) {
+      // First-time user — set defaults
+      await userRef.set({
+        email,
+        name,
+        google_refresh_token_encrypted: tokens.refresh_token
+          ? encryptToken(tokens.refresh_token)
+          : "",
+        spreadsheet_id: null,
+        last_sheet_sync_row: 0,
+        notification_email: email,
+        slack_webhook_url: null,
+        approval_mode: "manual",
+        created_at: new Date(),
+      });
+    } else {
+      await userRef.set(updateData, { merge: true });
+    }
+
+    req.session.userId = userId;
+    res.redirect(`${settings.FRONTEND_URL}/dashboard`);
+  } catch (err) {
+    console.error("OAuth callback error:", err);
+    res.redirect(`${settings.FRONTEND_URL}/?error=auth_failed`);
+  }
 });
 
 router.post("/logout", (req, res) => {
